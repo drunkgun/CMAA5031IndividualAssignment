@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;  // 引入UI命名空间
 
+
+
 public class Enemy : MonoBehaviour
 {
     public int level; // 敌人等级
@@ -12,40 +14,14 @@ public class Enemy : MonoBehaviour
 
     private void Start()
     {
-        // 根据敌人的等级设置血量
-        // 确保初始化正确
-        if (health == 0)  // 如果health还没有被设置
-        {
-            switch (level)
-            {
-                case 1:
-                    health = 3; // LEVEL1 血量 3
-                    break;
-                case 2:
-                    health = 5; // LEVEL2 血量 5
-                    break;
-                case 3:
-                    health = 10; // LEVEL3 血量 10
-                    break;
-                case 4:
-                    health = 20; // Boss 血量 20
-                    break;
-                default:
-                    health = 3; // 默认值，确保血量始终大于 0
-                    break;
-            }
-        }
-
-        // 输出初始的健康值
-        Debug.Log("Initial health: " + health);
-
-        // 设置初始血条值
+        // 直接使用 Prefab 中的 health 值，不再在脚本中设置
         if (healthBar != null)
         {
             healthBar.maxValue = health; // 设置血条最大值
             healthBar.value = health; // 设置血条当前值
         }
     }
+
 
     private void Update()
     {

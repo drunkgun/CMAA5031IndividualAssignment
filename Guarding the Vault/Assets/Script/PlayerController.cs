@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public GameObject bulletPrefab; // 子弹预制体
     public Transform bulletSpawn;   // 子弹发射点
-    public float bulletSpeed = 15f; // 子弹速度
+    public float bulletSpeed = 25f; // 子弹速度
 
     public int bulletPower = 1; // 子弹威力
 
@@ -18,6 +18,10 @@ public class PlayerController : MonoBehaviour
     public GameObject skillSelectionMenu; // 技能选择菜单
     private int playerLevel = 1; // 玩家等级
     private int roundsCompleted = 0; // 完成的轮次
+
+    // 自动发射相关变量
+    public float fireRate = 0.5f; // 子弹发射间隔（秒）
+    private float nextFireTime = 0f; // 下一次发射时间
 
     private void Start()
     {
@@ -50,10 +54,11 @@ public class PlayerController : MonoBehaviour
         newPosition.x = Mathf.Clamp(newPosition.x, -5f, 5f);
         transform.position = newPosition;
 
-        // 监听空格键射击
-        if (Input.GetKeyDown(KeyCode.Space))
+        // 自动发射子弹
+        if (Time.time >= nextFireTime)
         {
             Shoot();
+            nextFireTime = Time.time + fireRate;  // 设置下一次发射的时间
         }
 
         // 检查是否可以升级并显示技能选择菜单
@@ -102,7 +107,7 @@ public class PlayerController : MonoBehaviour
     // 增加子弹速度
     public void IncreaseBulletSpeed()
     {
-        bulletSpeed *= 1.2f; // 增加子弹速度
+        bulletSpeed *= 1.5f; // 增加子弹速度
         Debug.Log("子弹速度增加！当前速度: " + bulletSpeed);
         HideSkillSelection(); // 选择后隐藏菜单并恢复时间
     }
