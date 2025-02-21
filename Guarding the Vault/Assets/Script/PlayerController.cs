@@ -38,6 +38,12 @@ public class PlayerController : MonoBehaviour
 
         // 隐藏技能选择菜单
         skillSelectionMenu.SetActive(false);
+
+        if (GetComponent<Rigidbody>() == null)
+        {
+            gameObject.AddComponent<Rigidbody>();
+            GetComponent<Rigidbody>().useGravity = false;
+        }
     }
 
     // Update is called once per frame
@@ -124,5 +130,14 @@ public class PlayerController : MonoBehaviour
     public void CompleteRound()
     {
         roundsCompleted++;
+    }
+
+    // 碰撞处理
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            GameManager.instance.TriggerGameOver();
+        }
     }
 }

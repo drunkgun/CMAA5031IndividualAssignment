@@ -29,6 +29,18 @@ PrefabInstance:
       value: BOSS
       objectReference: {fileID: 0}
     - target: {fileID: 6408644659062815004, guid: 46426edfaa2ec4a35ad60ecdf046ef1f, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6408644659062815004, guid: 46426edfaa2ec4a35ad60ecdf046ef1f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6408644659062815004, guid: 46426edfaa2ec4a35ad60ecdf046ef1f, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6408644659062815004, guid: 46426edfaa2ec4a35ad60ecdf046ef1f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -70,7 +82,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9113453385763477966, guid: 46426edfaa2ec4a35ad60ecdf046ef1f, type: 3}
       propertyPath: health
-      value: 20
+      value: 15
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

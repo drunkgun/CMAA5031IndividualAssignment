@@ -1,99 +1,204 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public GameObject[] enemyPrefabs; // ´æ´¢²»Í¬µÈ¼¶µÄµĞÈËPrefab
-    public Transform spawnArea; // µĞÈËÉú³ÉÇøÓòÖĞĞÄµã
-    public float spawnInterval = 1f; // Éú³É¼ä¸ôÊ±¼ä£¨¿ÉÔÚInspectorµ÷Õû£©
-    public float spawnRangeX = 4f; // XÖáÉú³É·¶Î§
+    // å•ä¾‹å®ä¾‹
+    public static GameManager instance;
 
-    private int difficultyLevel = 1;
-    private int totalEnemies = 25;
-    private float timeElapsed = 0f;
-
-    void Start()
+    [System.Serializable]
+    public class DifficultySettings
     {
-        StartCoroutine(SpawnEnemies());
+        public int baseEnemyCount;    // åŸºç¡€æ•Œäººæ•°ï¼ˆä¸å«Bossï¼‰
+        public float spawnInterval;
+        public bool spawnBoss;
     }
 
-    void Update()
-    {
-        timeElapsed += Time.deltaTime;
+    [Header("é…ç½®å‚æ•°")]
+    [SerializeField] private DifficultySettings[] difficultySettings;
+    [SerializeField] private GameObject[] enemyPrefabs; // 0:å° 1:ä¸­ 2:å¤§ 3:Boss
+    [SerializeField] private GameObject gameOverUI;
+    [SerializeField] private Transform spawnArea;
+    [SerializeField][Range(2f, 10f)] private float spawnRangeX = 4f;
 
-        if (timeElapsed > 30f && difficultyLevel < 4)
+    [Header("è¿è¡Œæ—¶çŠ¶æ€")]
+    [SerializeField] private int currentWave = 0;
+    [SerializeField] private int remainingEnemies;
+    private bool isSpawning = false;
+    private bool bossSpawnedThisWave = false;
+    private float waveStartTime;
+
+    // å•ä¾‹æ¨¡å¼
+    private void Awake()
+    {
+        if (instance == null)
         {
-            difficultyLevel++;
-            IncreaseDifficulty();
-            timeElapsed = 0f;
+            instance = this;
+            DontDestroyOnLoad(gameObject);  // ä¿è¯GameManageråœ¨åœºæ™¯åˆ‡æ¢æ—¶ä¸è¢«é”€æ¯
+            InitializeGame();
+        }
+        else
+        {
+            Destroy(gameObject);
         }
     }
 
-void IncreaseDifficulty()
-{
-    // Ã¿¸öÄÑ¶ÈÊ±£¬ÖØÖÃ spawnInterval µ½³õÊ¼Öµ£¬²¢³ËÒÔÏµÊı
-    switch (difficultyLevel)
+    private void InitializeGame()
     {
-        case 2:
-            totalEnemies = 25;
-            spawnInterval = spawnInterval * 0.9f;  // ¼ÙÉè³õÊ¼ÖµÊÇ 1f£¬³ËÒÔÏµÊı
-            break;
-        case 3:
-            totalEnemies = 25;
-            spawnInterval = spawnInterval * 0.9f;  // ¼ÙÉè³õÊ¼ÖµÊÇ 1f£¬³ËÒÔÏµÊı
-            break;
-        case 4:
-            totalEnemies = 12;
-            spawnInterval = spawnInterval * 0.9f;  // ¼ÙÉè³õÊ¼ÖµÊÇ 1f£¬³ËÒÔÏµÊı
-            break;
+        gameOverUI.SetActive(false);
+        StartNewWave();
     }
 
-    StopCoroutine(SpawnEnemies());  // Stop the currently running SpawnEnemies coroutine
-    StartCoroutine(SpawnEnemies()); // Restart the coroutine with new difficulty settings
-}
-
-    IEnumerator SpawnEnemies()
+    private void StartNewWave()
     {
-        bool bossSpawned = false;
+        if (currentWave >= difficultySettings.Length) return;
 
-        for (int i = 0; i < totalEnemies; i++)
+        remainingEnemies = difficultySettings[currentWave].baseEnemyCount;
+        bossSpawnedThisWave = false;
+        waveStartTime = Time.time; // è®¾ç½®æ³¢æ¬¡å¼€å§‹æ—¶é—´
+        StartCoroutine(EnemySpawnRoutine(difficultySettings[currentWave]));
+    }
+
+    private IEnumerator EnemySpawnRoutine(DifficultySettings settings)
+    {
+        isSpawning = true;
+
+        // ç”ŸæˆåŸºç¡€æ•Œäºº
+        for (int i = 0; i < settings.baseEnemyCount; i++)
         {
-            // Éú³ÉËæ»úÎ»ÖÃ
-            Vector3 spawnPos = new Vector3(
-                Random.Range(-spawnRangeX, spawnRangeX),
-                spawnArea.position.y,
-                spawnArea.position.z
-            );
+            SpawnNormalEnemy();
+            yield return new WaitForSeconds(settings.spawnInterval);
+        }
 
-            GameObject enemyPrefab = SelectEnemyType();
+        // ç”ŸæˆBossï¼ˆå¦‚æœé…ç½®éœ€è¦ï¼‰
+        if (settings.spawnBoss && !bossSpawnedThisWave)
+        {
+            SpawnBoss();
+        }
 
-            // Èç¹ûÊÇµÚËÄÄÑ¶È£¬BossÉú³É
-            if (difficultyLevel == 4 && !bossSpawned)
-            {
-                GameObject boss = Instantiate(enemyPrefabs[3], spawnPos, Quaternion.identity); // Boss
-                bossSpawned = true;
-                i--; // ²¹³¥¼ÆÊıÆ÷£¬±£Ö¤×ÜÊı²»±ä
-                continue;
-            }
+        isSpawning = false;
+    }
 
-            GameObject enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-            yield return new WaitForSeconds(spawnInterval);
+    private void SpawnBoss()
+    {
+        Instantiate(enemyPrefabs[3], GetSpawnPosition(), Quaternion.identity);
+        bossSpawnedThisWave = true;
+        remainingEnemies++; // è¡¥å¿Bossçš„è®¡æ•°
+    }
+
+    private void SpawnNormalEnemy()
+    {
+        GameObject prefab = SelectEnemyType();
+        Instantiate(prefab, GetSpawnPosition(), Quaternion.identity);
+    }
+
+    private Vector3 GetSpawnPosition()
+    {
+        return new Vector3(
+            Random.Range(-spawnRangeX, spawnRangeX),
+            spawnArea.position.y,
+            spawnArea.position.z
+        );
+    }
+
+    public void OnEnemyDefeated(bool isBoss)
+    {
+        remainingEnemies--;
+        if (isBoss) remainingEnemies--; // ä¿®æ­£BossåŒå€è®¡æ•°é—®é¢˜
+
+        if (remainingEnemies <= 0 && !isSpawning)
+        {
+            HandleWaveCompletion();
         }
     }
 
-    // ¸ù¾İËæ»úÊıÑ¡ÔñµĞÈËÀàĞÍ
-    GameObject SelectEnemyType()
+    private void HandleWaveCompletion()
     {
-        int random = Random.Range(0, 100);
-
-        return difficultyLevel switch
+        currentWave = Mathf.Min(currentWave + 1, difficultySettings.Length - 1);
+        if (currentWave >= difficultySettings.Length)
         {
-            1 => random < 60 ? enemyPrefabs[0] : random < 90 ? enemyPrefabs[1] : enemyPrefabs[2],
-            2 => random < 30 ? enemyPrefabs[0] : random < 80 ? enemyPrefabs[1] : enemyPrefabs[2],
-            3 => random < 10 ? enemyPrefabs[0] : random < 45 ? enemyPrefabs[1] : enemyPrefabs[2],
-            4 => enemyPrefabs[1], // BossÄÑ¶ÈÖ÷ÒªÉú³ÉLEVEL2
-            _ => enemyPrefabs[0]
-        };
+            TriggerVictory();
+        }
+        else
+        {
+            StartNewWave();
+        }
     }
 
+    private void TriggerVictory()
+    {
+        Debug.Log("All waves cleared!");
+        // å¯æ·»åŠ èƒœåˆ©ç•Œé¢é€»è¾‘
+    }
+
+    private void Update()
+    {
+        if (currentWave < difficultySettings.Length - 1)
+        {
+            CheckWaveProgression();
+        }
+    }
+
+    private void CheckWaveProgression()
+    {
+        if (Time.time - waveStartTime > (currentWave + 1) * 30f) // æ¯æ³¢æœ€å¤§æŒç»­æ—¶é—´
+        {
+            ProgressToNextWave();
+        }
+    }
+
+    private void ProgressToNextWave()
+    {
+        currentWave = Mathf.Min(currentWave + 1, difficultySettings.Length - 1);
+        waveStartTime = Time.time; // é‡ç½®æ¯æ³¢å¼€å§‹æ—¶é—´
+        StartNewWave();
+    }
+
+    private GameObject SelectEnemyType()
+    {
+        if (enemyPrefabs.Length < 3)
+        {
+            Debug.LogError("è‡³å°‘éœ€è¦3ç§åŸºç¡€æ•Œäººé¢„åˆ¶ä½“");
+            return null;
+        }
+
+        float random = Random.value;
+        int prefabIndex = 0;
+
+        if (currentWave == 0)
+        {
+            prefabIndex = random < 0.6f ? 0 : random < 0.9f ? 1 : 2;
+        }
+        else if (currentWave == 1)
+        {
+            prefabIndex = random < 0.3f ? 0 : random < 0.8f ? 1 : 2;
+        }
+        else // currentWave >= 2
+        {
+            prefabIndex = random < 0.1f ? 0 : random < 0.45f ? 1 : 2;
+        }
+
+        return enemyPrefabs[prefabIndex];
+    }
+
+    public void TriggerGameOver()
+    {
+        Time.timeScale = 0f;
+        gameOverUI.SetActive(true);
+        StopAllCoroutines();
+    }
+
+    public void RestartGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // æ–°å¢è°ƒè¯•åŠŸèƒ½
+    private void OnGUI()
+    {
+        GUI.Label(new Rect(10, 10, 200, 20), $"Current Wave: {currentWave + 1}");
+        GUI.Label(new Rect(10, 30, 200, 20), $"Remaining Enemies: {remainingEnemies}");
+    }
 }
