@@ -8,7 +8,7 @@ public class Enemy : MonoBehaviour
 
     // 公共字段
     public int level; // 敌人等级
-    public int health; // 敌人血量
+    public float health; // 敌人血量
     public Slider healthBar; // 血条 Slider
     public float speed = 5f; // 敌人移动速度
 
@@ -62,7 +62,7 @@ public class Enemy : MonoBehaviour
     {
         if (other.CompareTag("Bullet"))
         {
-            int bulletPower = other.GetComponent<Bullet>().power; // 获取子弹威力
+            float bulletPower = other.GetComponent<Bullet>().power; // 获取子弹威力
 
             // 扣除血量
             health -= bulletPower;

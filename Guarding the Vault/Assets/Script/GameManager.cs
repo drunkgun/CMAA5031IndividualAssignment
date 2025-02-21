@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;  // 添加此行以使用 UI 元素，如 Button
+
 
 public class GameManager : MonoBehaviour
 {
@@ -11,23 +13,32 @@ public class GameManager : MonoBehaviour
     public class DifficultySettings
     {
         public int baseEnemyCount;    // 基础敌人数（不含Boss）
-        public float spawnInterval;
-        public bool spawnBoss;
+        public float spawnInterval;   // 敌人生成的时间间隔
+        public bool spawnBoss;        // 是否生成Boss
+        public float rewardMultiplier = 1.3f; // 奖励倍数
+
     }
 
-    [Header("配置参数")]
+    [Header("Setting Here")]
     [SerializeField] private DifficultySettings[] difficultySettings;
     [SerializeField] private GameObject[] enemyPrefabs; // 0:小 1:中 2:大 3:Boss
     [SerializeField] private GameObject gameOverUI;
     [SerializeField] private Transform spawnArea;
     [SerializeField][Range(2f, 10f)] private float spawnRangeX = 4f;
 
-    [Header("运行时状态")]
+    [Header("Skill UI")]
+    [SerializeField] private GameObject skillUI; // 显示技能加成按钮的UI
+    [SerializeField] private Button bulletPowerButton; // 子弹威力按钮
+    [SerializeField] private Button bulletSpeedButton; // 子弹速度按钮
+
+    [Header("Running Status")]
     [SerializeField] private int currentWave = 0;
     [SerializeField] private int remainingEnemies;
     private bool isSpawning = false;
     private bool bossSpawnedThisWave = false;
     private float waveStartTime;
+    public float bulletPower = 1f;  // 初始子弹威力
+    public float bulletSpeed = 20f;  // 初始子弹速度
 
     // 单例模式
     private void Awake()
@@ -47,6 +58,8 @@ public class GameManager : MonoBehaviour
     private void InitializeGame()
     {
         gameOverUI.SetActive(false);
+        skillUI.SetActive(false); // 开始时隐藏技能按钮
+
         StartNewWave();
     }
 
@@ -68,7 +81,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < settings.baseEnemyCount; i++)
         {
             SpawnNormalEnemy();
-            yield return new WaitForSeconds(settings.spawnInterval);
+            yield return new WaitForSeconds(settings.spawnInterval);  // 延时生成每个敌人
         }
 
         // 生成Boss（如果配置需要）
@@ -78,8 +91,20 @@ public class GameManager : MonoBehaviour
         }
 
         isSpawning = false;
+
+        // 每波结束后暂停游戏并显示技能界面
+        ShowSkillButtons();
+        Time.timeScale = 0f;  // 暂停游戏
     }
 
+    private void ShowSkillButtons()
+    {
+        skillUI.SetActive(true); // 显示技能加成按钮
+
+        // 绑定按钮点击事件
+        bulletPowerButton.onClick.AddListener(UpgradeBulletPower);
+        bulletSpeedButton.onClick.AddListener(UpgradeBulletSpeed);
+    }
     private void SpawnBoss()
     {
         Instantiate(enemyPrefabs[3], GetSpawnPosition(), Quaternion.identity);
@@ -100,6 +125,23 @@ public class GameManager : MonoBehaviour
             spawnArea.position.y,
             spawnArea.position.z
         );
+    }
+    // 升级子弹威力
+    private void UpgradeBulletPower()
+    {
+        bulletPower *= difficultySettings[currentWave].rewardMultiplier;
+        Debug.Log($"Bullet Power Upgraded: {bulletPower}");
+        skillUI.SetActive(false); // 隐藏技能按钮
+        Time.timeScale = 1f; // 恢复游戏
+    }
+
+    // 升级子弹速度
+    private void UpgradeBulletSpeed()
+    {
+        bulletSpeed *= difficultySettings[currentWave].rewardMultiplier;
+        Debug.Log($"Bullet Speed Upgraded: {bulletSpeed}");
+        skillUI.SetActive(false); // 隐藏技能按钮
+        Time.timeScale = 1f; // 恢复游戏
     }
 
     public void OnEnemyDefeated(bool isBoss)
